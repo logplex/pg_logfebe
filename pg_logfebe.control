@@ -1,0 +1,4 @@
+comment = 'log via febe framing protocol to a unix socket'
+default_version = '1.0'
+module_pathname = '$libdir/pg_logfebe'
+relocatable = true
