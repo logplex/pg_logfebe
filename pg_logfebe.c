@@ -478,11 +478,17 @@ fmtLogMsg(StringInfo dst, ErrorData *edata)
 	else
 		appendStringInfoPtr(dst, NULL);
 
-	/* Transaction id */
+	/*
+	 * Transaction id
+	 *
+	 * This seems to be a mistake both here and in elog.c; in particular, it's
+	 * not clear how the epoch would get added here.  However, leave room in
+	 * the protocol to fix this later by upcasting.
+	 */
 	{
-		uint32_t nXid = htobe32(GetTopTransactionIdIfAny());
+		uint64_t nTxid = htobe64((uint64) GetTopTransactionIdIfAny());
 
-		appendBinaryStringInfo(dst, (void *) &nXid, sizeof nXid);
+		appendBinaryStringInfo(dst, (void *) &nTxid, sizeof nTxid);
 	}
 
 	/* Error severity */
