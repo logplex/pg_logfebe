@@ -22,6 +22,7 @@
 #include "lib/stringinfo.h"
 #include "libpq/libpq-be.h"
 #include "miscadmin.h"
+#include "pg_config.h"
 #include "pgtime.h"
 #include "storage/proc.h"
 #include "tcop/tcopprot.h"
@@ -48,15 +49,18 @@ PG_MODULE_MAGIC;
 
 #define FORMATTED_TS_LEN 128
 
+/*
+ * Startup version string, e.g. PG9.2.2/1, where the /1 indicates the
+ * pg_logfebe protocol version.
+ */
+#define PROTO_VERSION ("PG" PG_VERSION "/1")
+
 /* GUC-configured destination of the log pages */
 static char *logUnixSocketPath = NULL;
 static char *ident = NULL;
 
 /* Old hook storage for loading/unloading of the extension */
 static emit_log_hook_type prev_emit_log_hook = NULL;
-static void openSocket(int *dst, char *path);
-static void closeSocket(int *fd);
-static void logfebe_emit_log_hook(ErrorData *edata);
 
 /* Caches the formatted start time */
 static char cachedBackendStartTime[FORMATTED_TS_LEN];
@@ -67,8 +71,26 @@ static char cachedBackendStartTime[FORMATTED_TS_LEN];
  */
 static int outSockFd = -1;
 
+/* Dynamic linking hooks for Postgres */
 void _PG_init(void);
 void _PG_fini(void);
+
+/* Internal function definitions*/
+static bool formAddr(struct sockaddr_un *dst, char *path);
+static bool isLogLevelOutput(int elevel, int log_min_level);
+static void appendStringInfoPtr(StringInfo dst, const char *s);
+static void closeSocket(int *fd);
+static void fmtLogMsg(StringInfo dst, ErrorData *edata);
+static void formatLogTime(char *dst, size_t dstSz, struct timeval tv);
+static void formatNow(char *dst, size_t dstSz);
+static void gucOnAssignCloseInvalidate(const char *newval, void *extra);
+static void logfebe_emit_log_hook(ErrorData *edata);
+static void openSocket(int *dst, char *path);
+static void optionalGucGet(char **dest, const char *name,
+						   const char *shortDesc);
+static void reCacheBackendStartTime(void);
+static void sendOrInval(int *fd, char *payload, size_t payloadSz);
+
 
 /*
  * Useful for HUP triggered reassignment: invalidate the socket, which will
@@ -166,6 +188,7 @@ openSocket(int *dst, char *path)
 	struct sockaddr_un	addr;
 	bool				formed;
 	int					fd		   = -1;
+	StringInfoData startup;
 
 	/*
 	 * This procedure is only defined on the domain of invalidated file
@@ -198,8 +221,40 @@ openSocket(int *dst, char *path)
 			goto err;
 	} while (errno == EINTR);
 
-	/* Everything worked; connection established. */
+	/*
+	 * Connection established.
+	 *
+	 * Try to send start-up information as a service to the caller.  Should
+	 * this fail, sendOrInval will close and invalidate the socket, though.
+	 */
 	Assert(fd >= 0);
+	initStringInfo(&startup);
+
+	/* Prepare startup: protocol version ('V') frame */
+	{
+		const uint32_t nVlen = htobe32((sizeof PROTO_VERSION) +
+									   sizeof(u_int32_t));
+
+		appendStringInfoChar(&startup, 'V');
+		appendBinaryStringInfo(&startup, (void *) &nVlen, sizeof nVlen);
+		appendBinaryStringInfo(&startup, PROTO_VERSION, sizeof PROTO_VERSION);
+	}
+
+	/* Prepare startup: system identification ('I') frame */
+	{
+		const int payloadLen = strlen(ident) + sizeof '\0';
+		const uint32_t nIdent = htobe32(payloadLen + sizeof(u_int32_t));
+
+		appendStringInfoChar(&startup, 'I');
+		appendBinaryStringInfo(&startup, (void *) &nIdent, sizeof nIdent);
+		appendBinaryStringInfo(&startup, (void *) ident, payloadLen);
+	}
+
+	/*
+	 * Try to send the prepared startup packet, invaliding fd if things go
+	 * awry.
+	 */
+	sendOrInval(&fd, startup.data, startup.len);
 	*dst = fd;
 	goto exit;
 
@@ -271,7 +326,7 @@ formatLogTime(char *dst, size_t dstSz, struct timeval tv)
 }
 
 static void
-reCacheBackendStartTime()
+reCacheBackendStartTime(void)
 {
 	pg_time_t	stampTime = (pg_time_t) MyStartTime;
 
@@ -572,15 +627,59 @@ fmtLogMsg(StringInfo dst, ErrorData *edata)
 	appendStringInfoPtr(dst, application_name);
 }
 
+/*
+ * Send the payload or invalidate *fd.
+ *
+ * No confirmation of success or failure is delivered.
+ */
+static void
+sendOrInval(int *fd, char *payload, size_t payloadSz)
+{
+	const int saved_errno = errno;
+	int bytesWritten;
+
+writeAgain:
+	errno = 0;
+	bytesWritten = send(*fd, payload, payloadSz, 0);
+
+	if (bytesWritten < payloadSz)
+	{
+		/*
+		 * Something went wrong.
+		 *
+		 * The ErrorData passed to the hook goes un-logged in this case (except
+		 * when errno is EINTR).
+		 *
+		 * Because *fd is presumed a blocking socket, it is expected that
+		 * whenever a full write could not be achieved that something is awry,
+		 * and that the connection should abandoned.
+		 */
+		Assert(errno != 0);
+
+		/* Harmless and brief; just try again */
+		if (errno == EINTR)
+			goto writeAgain;
+
+		/*
+		 * Close and invalidate the socket fd; a new attempt to get a valid fd
+		 * must come the next time this hook is called.
+		 */
+		closeSocket(fd);
+	}
+
+	Assert(bytesWritten == len);
+
+	errno = saved_errno;
+}
+
 static void
 logfebe_emit_log_hook(ErrorData *edata)
 {
 	int save_errno = errno;
-	int bytesWritten;
 	StringInfoData buf;
 	StringInfoData framed;
 
-	/* 
+	/*
 	 * Initialize StringInfoDatas early, because pfree is called
 	 * unconditionally at exit.
 	 */
@@ -600,51 +699,17 @@ logfebe_emit_log_hook(ErrorData *edata)
 	 * Format the output, and figure out how long it is, and frame it
 	 * for the protocol.
 	 */
-	fmtLogMsg(&buf, edata);
-	appendStringInfoChar(&framed, 'L');
-
 	{
-		uint32_t frsize = htobe32(buf.len);
+		uint32_t frsize = htobe32(buf.len + sizeof buf.len);
 
+		fmtLogMsg(&buf, edata);
+		appendStringInfoChar(&framed, 'L');
 		appendBinaryStringInfo(&framed, (void *) &frsize, sizeof frsize);
+		appendBinaryStringInfo(&framed, buf.data, buf.len);
 	}
 
-	appendBinaryStringInfo(&framed, buf.data, buf.len);
-
-writeAgain:
-	errno = 0;
-	bytesWritten = send(outSockFd, framed.data, framed.len, 0);
-
-	if (bytesWritten < framed.len)
-	{
-		/*
-		 * Something went wrong.
-		 *
-		 * The ErrorData passed to the hook goes un-logged in this case (except
-		 * when errno is EINTR).
-		 *
-		 * Because outSockFd is opened as a blocking socket, it is
-		 * expected that whenever a full write could not be achieved
-		 * that something is awry, and that the connection should
-		 * abandoned.
-		 */
-		Assert(errno != 0);
-
-		/* Harmless and brief; just try again */
-		if (errno == EINTR)
-			goto writeAgain;
-
-		/*
-		 * Close and invalidate the socket fd; a new attempt to get a valid fd
-		 * must come the next time this hook is called.
-		 */
-		closeSocket(&outSockFd);
-		goto exit;
-	}
-	else
-	{
-		Assert(bytesWritten == len);
-	}
+	/* Finally: try to send the constructed message */
+	sendOrInval(&outSockFd, framed.data, framed.len);
 
 exit:
 	pfree(buf.data);
