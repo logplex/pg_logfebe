@@ -186,15 +186,17 @@ openSocket(int *dst, char *path)
 	if (fd < 0)
 		goto err;
 
-	/* Connect socket to server. Or die.*/
+	/* Connect socket to server. Or die. */
+	Assert(formed);
+	do
 	{
 		int res;
 
-		Assert(formed);
+		errno = 0;
 		res = connect(fd, (void *) &addr, sizeof addr);
-		if (res < 0)
+		if (res < 0 || (errno != EINTR && errno != 0))
 			goto err;
-	}
+	} while (errno == EINTR);
 
 	/* Everything worked; connection established. */
 	Assert(fd >= 0);
