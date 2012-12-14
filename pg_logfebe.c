@@ -373,7 +373,7 @@ fmtLogMsg(StringInfo dst, ErrorData *edata)
 
 	/* Process id  */
 	{
-		uint32_t nPid = htonl(savedPid);
+		uint32_t nPid = htobe32(savedPid);
 
 		appendBinaryStringInfo(dst, (void *) &nPid, sizeof nPid);
 	}
@@ -454,14 +454,14 @@ fmtLogMsg(StringInfo dst, ErrorData *edata)
 
 	/* Transaction id */
 	{
-		uint32_t nXid = htonl(GetTopTransactionIdIfAny());
+		uint32_t nXid = htobe32(GetTopTransactionIdIfAny());
 
 		appendBinaryStringInfo(dst, (void *) &nXid, sizeof nXid);
 	}
 
 	/* Error severity */
 	{
-		uint32_t nelevel = htonl(edata->elevel);
+		uint32_t nelevel = htobe32(edata->elevel);
 
 		appendBinaryStringInfo(dst, (void *) &nelevel, sizeof nelevel);
 	}
@@ -487,7 +487,7 @@ fmtLogMsg(StringInfo dst, ErrorData *edata)
 	/* if printed internal query, print internal pos too */
 	if (edata->internalpos > 0 && edata->internalquery != NULL)
 	{
-		uint32_t ninternalpos = htonl(edata->internalpos);
+		uint32_t ninternalpos = htobe32(edata->internalpos);
 
 		appendBinaryStringInfo(dst, (void *) &ninternalpos,
 							   sizeof ninternalpos);
@@ -507,7 +507,7 @@ fmtLogMsg(StringInfo dst, ErrorData *edata)
 
 	/* Write cursor position, although it can be garbage sometimes. */
 	{
-		uint32_t nCursorPos = htonl(edata->cursorpos);
+		uint32_t nCursorPos = htobe32(edata->cursorpos);
 
 		appendBinaryStringInfo(dst, (void *) &nCursorPos, sizeof nCursorPos);
 	}
@@ -572,7 +572,7 @@ logfebe_emit_log_hook(ErrorData *edata)
 	appendStringInfoChar(&framed, 'L');
 
 	{
-		uint32_t frsize = htonl(buf.len);
+		uint32_t frsize = htobe32(buf.len);
 
 		appendBinaryStringInfo(&framed, (void *) &frsize, sizeof frsize);
 	}
