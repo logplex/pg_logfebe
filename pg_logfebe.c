@@ -220,6 +220,11 @@ exit:
 	return;
 }
 
+/*
+ * Perform a best-effort to close and invalidate a file descriptor.
+ *
+ * This exists to to encapsulate EINTR handling and invalidation.
+ */
 static void
 closeSocket(int *fd)
 {
