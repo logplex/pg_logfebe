@@ -111,6 +111,10 @@ optionalGucGet(char **dest, const char *name,
 	PG_END_TRY();
 }
 
+/*
+ * Form a sockaddr_un for communication, returning false if this could not be
+ * completed.
+ */
 static bool
 formAddr(struct sockaddr_un *dst, char *path)
 {
@@ -151,6 +155,10 @@ _PG_init(void)
 }
 
 
+/*
+ * Given an invalid Fd in *dst, try to open a unix socket connection to the
+ * given path.
+ */
 static void
 openSocket(int *dst, char *path)
 {
