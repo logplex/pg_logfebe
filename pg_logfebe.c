@@ -71,6 +71,17 @@ void _PG_init(void);
 void _PG_fini(void);
 
 /*
+ * Useful for HUP triggered reassignment: invalidate the socket, which will
+ * cause path information to be evaluated when reconnection and identification
+ * to be re-exchanged.
+ */
+static void
+gucOnAssignCloseInvalidate(const char *newval, void *extra)
+{
+	closeSocket(&outSockFd);
+}
+
+/*
  * Procedure that wraps a bunch of boilerplate GUC options appropriate for all
  * the options used in this extension.
  */
@@ -93,7 +104,7 @@ optionalGucGet(char **dest, const char *name,
 			PGC_SIGHUP,
 			GUC_NOT_IN_SAMPLE,
 			NULL,
-			NULL,
+			gucOnAssignCloseInvalidate,
 			NULL);
 		EmitWarningsOnPlaceholders(name);
 	}
