@@ -408,8 +408,6 @@ fmtLogMsg(StringInfo dst, ErrorData *edata)
 	/* has counter been reset in current process? */
 	static int	savedPid = 0;
 
-	initStringInfo(dst);
-
 	/*
 	 * This is one of the few places where we'd rather not inherit a static
 	 * variable's value from the postmaster.  But since we will, reset it when
@@ -677,14 +675,12 @@ logfebe_emit_log_hook(ErrorData *edata)
 {
 	int save_errno = errno;
 	StringInfoData buf;
-	StringInfoData framed;
 
 	/*
 	 * Initialize StringInfoDatas early, because pfree is called
 	 * unconditionally at exit.
 	 */
 	initStringInfo(&buf);
-	initStringInfo(&framed);
 
 	if (outSockFd < 0)
 	{
@@ -696,24 +692,43 @@ logfebe_emit_log_hook(ErrorData *edata)
 	}
 
 	/*
+	 * Make room for message type byte and length header.  The length
+	 * header must be overwritten to the correct value at the end.
+	 */
+	appendBinaryStringInfo(&buf, "L\0\0\0\0", sizeof "L\0\0\0\0");
+
+	/*
 	 * Format the output, and figure out how long it is, and frame it
 	 * for the protocol.
 	 */
 	{
-		uint32_t frsize = htobe32(buf.len + sizeof buf.len);
+		uint32_t *msgSize;
 
 		fmtLogMsg(&buf, edata);
-		appendStringInfoChar(&framed, 'L');
-		appendBinaryStringInfo(&framed, (void *) &frsize, sizeof frsize);
-		appendBinaryStringInfo(&framed, buf.data, buf.len);
+
+		/*
+		 * Check that buf is prepared properly, with enough space and
+		 * the placeholder length expected.
+		 */
+		Assert(buf.len > 5);
+		Assert(buf.data[0] == 'L');
+
+		msgSize = (uint32_t *)(buf.data + 1);
+		Assert(*msgSize == 0);
+
+		/*
+		 * Fill in *msgSize: buf contains the msg header, which is not
+		 * included in length; subract and byte-swap to paste the
+		 * right length into place.
+		 */
+		*msgSize = htobe32(buf.len - 1);
 	}
 
 	/* Finally: try to send the constructed message */
-	sendOrInval(&outSockFd, framed.data, framed.len);
+	sendOrInval(&outSockFd, buf.data, buf.len);
 
 exit:
 	pfree(buf.data);
-	pfree(framed.data);
 	errno = save_errno;
 
 	/* Call a previous hook, should it exist */
