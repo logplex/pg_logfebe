@@ -242,8 +242,8 @@ openSocket(int *dst, char *path)
 
 	/* Prepare startup: system identification ('I') frame */
 	{
-		const int payloadLen = strlen(ident) + sizeof '\0';
-		const uint32_t nIdent = htobe32(payloadLen + sizeof(u_int32_t));
+		const int		payloadLen = strlen(ident) + sizeof '\0';
+		const uint32_t	nIdent	   = htobe32(payloadLen + sizeof(u_int32_t));
 
 		appendStringInfoChar(&startup, 'I');
 		appendBinaryStringInfo(&startup, (void *) &nIdent, sizeof nIdent);
