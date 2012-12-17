@@ -255,6 +255,7 @@ openSocket(int *dst, char *path)
 	 * awry.
 	 */
 	sendOrInval(&fd, startup.data, startup.len);
+	pfree(startup.data);
 	*dst = fd;
 	goto exit;
 
