@@ -707,11 +707,12 @@ logfebe_emit_log_hook(ErrorData *edata)
 	/*
 	 * Make room for message type byte and length header.  The length header
 	 * must be overwritten to the correct value at the end.
-	 *
-	 * NB: that C string literals have a trailing NUL byte at the end, which is
-	 * why sizeof is adjusted.
 	 */
-	appendBinaryStringInfo(&buf, "L\0\0\0\0", sizeof "L\0\0\0\0" - 1);
+	{
+		const char logHdr[5] = {'L', '\0', '\0', '\0', '\0'};
+
+		appendBinaryStringInfo(&buf, logHdr, sizeof logHdr);
+	}
 
 	/*
 	 * Format the output, and figure out how long it is, and frame it
