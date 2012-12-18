@@ -589,19 +589,24 @@ fmtLogMsg(StringInfo dst, ErrorData *edata)
 	/* errcontext */
 	appendStringInfoPtr(dst, edata->context);
 
-	/* user query --- only reported if not disabled by the caller */
+	/*
+	 * user query --- only reported if not disabled by the caller.
+	 *
+	 * Also include query position.
+	 */
 	if (isLogLevelOutput(edata->elevel, log_min_error_statement) &&
 		debug_query_string != NULL && !edata->hide_stmt)
 	{
-		appendStringInfoPtr(dst, debug_query_string);
-	}
-	else
-		appendStringInfoPtr(dst, NULL);
-
-	/* Write cursor position, although it can be garbage sometimes. */
-	{
 		uint32_t nCursorPos = htobe32(edata->cursorpos);
 
+		appendStringInfoPtr(dst, debug_query_string);
+		appendBinaryStringInfo(dst, (void *) &nCursorPos, sizeof nCursorPos);
+	}
+	else
+	{
+		uint32_t nCursorPos = htobe32(-1);
+
+		appendStringInfoPtr(dst, NULL);
 		appendBinaryStringInfo(dst, (void *) &nCursorPos, sizeof nCursorPos);
 	}
 
