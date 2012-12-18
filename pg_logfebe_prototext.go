@@ -99,6 +99,84 @@ type LogRecord struct {
 	ApplicationName  *string
 }
 
+func (lr *LogRecord) oneLine() []byte {
+	buf := bytes.Buffer{}
+
+	wd := func() {
+		buf.WriteByte(' ')
+	}
+
+	ws := func(name string, s string) {
+		buf.WriteString(fmt.Sprintf("%s=%q", name, s))
+	}
+
+	wns := func(name string, s *string) {
+		body := func() string {
+			if s == nil {
+				return "NULL"
+			} else {
+				return fmt.Sprintf("[%q]", *s)
+			}
+		}()
+
+		buf.WriteString(name)
+		buf.WriteByte('=')
+		buf.WriteString(body)
+	}
+
+	wnum := func(name string, n interface{}) {
+		buf.WriteString(fmt.Sprintf("%s=%v", name, n))
+	}
+
+	ws("LogTime", lr.LogTime)
+	wd()
+	wns("UserName", lr.UserName)
+	wd()
+	wns("DatabaseName", lr.DatabaseName)
+	wd()
+	wnum("Pid", lr.Pid)
+	wd()
+	wns("ClientAddr", lr.ClientAddr)
+	wd()
+	ws("SessionId", lr.SessionId)
+	wd()
+	wnum("SeqNum", lr.SeqNum)
+	wd()
+	wns("PsDisplay", lr.PsDisplay)
+	wd()
+	ws("SessionStart", lr.SessionStart)
+	wd()
+	wns("Vxid", lr.Vxid)
+	wd()
+	wnum("Txid", lr.Txid)
+	wd()
+	wnum("ELevel", lr.ELevel)
+	wd()
+	wns("SQLState", lr.SQLState)
+	wd()
+	wns("ErrMessage", lr.ErrMessage)
+	wd()
+	wns("ErrDetail", lr.ErrDetail)
+	wd()
+	wns("ErrHint", lr.ErrHint)
+	wd()
+	wns("InternalQuery", lr.InternalQuery)
+	wd()
+	wnum("InternalQueryPos", lr.InternalQueryPos)
+	wd()
+	wns("ErrContext", lr.ErrContext)
+	wd()
+	wns("UserQuery", lr.UserQuery)
+	wd()
+	wnum("UserQueryPos", lr.UserQueryPos)
+	wd()
+	wns("FileErrPos", lr.FileErrPos)
+	wd()
+	wns("ApplicationName", lr.ApplicationName)
+
+	return buf.Bytes()
+}
+
 func NewLogRecord(m *Message) (lrp *LogRecord, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -301,7 +379,7 @@ func handleConnection(cConn net.Conn) {
 			return
 		}
 
-		log.Println(lr)
+		log.Println(string(lr.oneLine()))
 	}
 }
 
