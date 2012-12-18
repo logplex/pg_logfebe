@@ -578,6 +578,13 @@ fmtLogMsg(StringInfo dst, ErrorData *edata)
 		appendBinaryStringInfo(dst, (void *) &ninternalpos,
 							   sizeof ninternalpos);
 	}
+	else
+	{
+		uint32_t ninternalpos = htobe32(-1);
+
+		appendBinaryStringInfo(dst, (void *) &ninternalpos,
+							   sizeof ninternalpos);
+	}
 
 	/* errcontext */
 	appendStringInfoPtr(dst, edata->context);
