@@ -693,10 +693,13 @@ logfebe_emit_log_hook(ErrorData *edata)
 	}
 
 	/*
-	 * Make room for message type byte and length header.  The length
-	 * header must be overwritten to the correct value at the end.
+	 * Make room for message type byte and length header.  The length header
+	 * must be overwritten to the correct value at the end.
+	 *
+	 * NB: that C string literals have a trailing NUL byte at the end, so leave
+	 * one such NUL byte out of the literal itself.
 	 */
-	appendBinaryStringInfo(&buf, "L\0\0\0\0", sizeof "L\0\0\0\0");
+	appendBinaryStringInfo(&buf, "L\0\0\0", sizeof "L\0\0\0");
 
 	/*
 	 * Format the output, and figure out how long it is, and frame it
