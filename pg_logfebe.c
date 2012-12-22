@@ -678,8 +678,6 @@ writeAgain:
 		closeSocket(fd);
 	}
 
-	Assert(bytesWritten == len);
-
 	errno = saved_errno;
 }
 
