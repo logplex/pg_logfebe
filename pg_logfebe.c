@@ -43,6 +43,10 @@
 #  define be16toh(x) betoh16(x)
 #  define be32toh(x) betoh32(x)
 #  define be64toh(x) betoh64(x)
+#elif defined(__darwin__)
+#  include <libkern/OSByteOrder.h>
+#  define htobe32(x) __DARWIN_OSSwapInt32(x)
+#  define htobe64(x) __DARWIN_OSSwapInt64(x)
 #endif
 
 PG_MODULE_MAGIC;
