@@ -57,7 +57,7 @@ PG_MODULE_MAGIC;
  * Startup version string, e.g. PG9.2.2/1, where the /1 indicates the
  * pg_logfebe protocol version.
  */
-#define PROTO_VERSION ("PG" PG_VERSION "/1")
+#define PROTO_VERSION ("PG-" PG_VERSION "/logfebe-1")
 
 /* GUC-configured destination of the log pages */
 static char *logUnixSocketPath = NULL;
