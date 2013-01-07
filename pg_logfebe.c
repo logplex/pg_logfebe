@@ -115,26 +115,17 @@ static void
 optionalGucGet(char **dest, const char *name,
 			   const char *shortDesc)
 {
-	PG_TRY();
-	{
-		*dest = GetConfigOptionByName(name, NULL);
-	}
-	PG_CATCH();
-	{
-		DefineCustomStringVariable(
-			name,
-			shortDesc,
-			"",
-			dest,
-			"",
-			PGC_SIGHUP,
-			GUC_NOT_IN_SAMPLE,
-			NULL,
-			gucOnAssignCloseInvalidate,
-			NULL);
-		EmitWarningsOnPlaceholders(name);
-	}
-	PG_END_TRY();
+	DefineCustomStringVariable(
+		name,
+		shortDesc,
+		"",
+		dest,
+		"",
+		PGC_SIGHUP,
+		GUC_NOT_IN_SAMPLE,
+		NULL,
+		gucOnAssignCloseInvalidate,
+		NULL);
 }
 
 /*
@@ -174,6 +165,8 @@ _PG_init(void)
 				   "Unix socket to send logs to in FEBE frames.");
 	optionalGucGet(&ident, "logfebe.identity",
 				   "The identity of the installation of PostgreSQL.");
+
+	EmitWarningsOnPlaceholders("logfebe");
 
 	/* Install hook */
 	prev_emit_log_hook = emit_log_hook;
@@ -246,12 +239,22 @@ openSocket(int *dst, char *path)
 
 	/* Prepare startup: system identification ('I') frame */
 	{
-		const int		payloadLen = strlen(ident) + sizeof '\0';
-		const uint32_t	nIdent	   = htobe32(payloadLen + sizeof(u_int32_t));
+		char			*payload;
+		int				 payloadLen;
+		uint32_t		 nPayloadLen;
+
+		if (ident == NULL)
+			payload = "";
+		else
+			payload = ident;
+
+		payloadLen = strlen(payload) + sizeof '\0';
+		nPayloadLen = htobe32(payloadLen + sizeof nPayloadLen);
 
 		appendStringInfoChar(&startup, 'I');
-		appendBinaryStringInfo(&startup, (void *) &nIdent, sizeof nIdent);
-		appendBinaryStringInfo(&startup, (void *) ident, payloadLen);
+		appendBinaryStringInfo(&startup, (void *) &nPayloadLen,
+							   sizeof nPayloadLen);
+		appendBinaryStringInfo(&startup, (void *) payload, payloadLen);
 	}
 
 	/*
@@ -688,8 +691,31 @@ writeAgain:
 static void
 logfebe_emit_log_hook(ErrorData *edata)
 {
-	int save_errno = errno;
+	int save_errno;
 	StringInfoData buf;
+
+	/*
+	 * Early exit if the socket path is not set and isn't in the format of
+	 * an absolute path.
+	 *
+	 * The empty identity ("ident") is a valid one, so it is not rejected in
+	 * the same way an empty logUnixSocketPath is.
+	 */
+	if (logUnixSocketPath == NULL ||
+		strlen(logUnixSocketPath) <= 0 || logUnixSocketPath[0] != '/')
+	{
+		/*
+		 * Unsetting the GUCs via SIGHUP would leave a connection
+		 * dangling, if it exists, close it.
+		 */
+		if (outSockFd >= 0) {
+			closeSocket(&outSockFd);
+		}
+
+		goto quickExit;
+	}
+
+	save_errno = errno;
 
 	/*
 	 * Initialize StringInfoDatas early, because pfree is called
@@ -750,6 +776,7 @@ exit:
 	pfree(buf.data);
 	errno = save_errno;
 
+quickExit:
 	/* Call a previous hook, should it exist */
 	if (prev_emit_log_hook != NULL)
 		prev_emit_log_hook(edata);
