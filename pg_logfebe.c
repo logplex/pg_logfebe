@@ -60,8 +60,8 @@ PG_MODULE_MAGIC;
 #define PROTO_VERSION ("PG-" PG_VERSION "/logfebe-1")
 
 /* GUC-configured destination of the log pages */
-static char *logUnixSocketPath = NULL;
-static char *ident = NULL;
+static char *logUnixSocketPath = "";
+static char *ident = "";
 
 /* Old hook storage for loading/unloading of the extension */
 static emit_log_hook_type prev_emit_log_hook = NULL;
