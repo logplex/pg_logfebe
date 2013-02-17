@@ -654,7 +654,7 @@ static void
 sendOrInval(int *fd, char *payload, size_t payloadSz)
 {
 	const int saved_errno = errno;
-	int bytesWritten;
+	ssize_t bytesWritten;
 
 writeAgain:
 	errno = 0;
@@ -669,7 +669,11 @@ writeAgain:
 	 */
 	bytesWritten = send(*fd, payload, payloadSz, MSG_NOSIGNAL);
 
-	if (bytesWritten < payloadSz)
+	/*
+	 * NB: Carefully perform signed-integer conversion to ssize_t;
+	 * otherwise the comparison delivers unintuitive results.
+	 */
+	if (bytesWritten < (ssize_t) payloadSz)
 	{
 		/*
 		 * Something went wrong.
