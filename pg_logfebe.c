@@ -658,7 +658,16 @@ sendOrInval(int *fd, char *payload, size_t payloadSz)
 
 writeAgain:
 	errno = 0;
-	bytesWritten = send(*fd, payload, payloadSz, 0);
+
+	/*
+	 * Send, and carefully suppress SIGPIPE, which otherwise will
+	 * cause sendOrInval's error handling to function in since a
+	 * failure will come in as a signal rather than an error code.
+	 *
+	 * This is required to allow re-connection in event the server
+	 * closes the connection.
+	 */
+	bytesWritten = send(*fd, payload, payloadSz, MSG_NOSIGNAL);
 
 	if (bytesWritten < payloadSz)
 	{
