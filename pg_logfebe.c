@@ -268,7 +268,7 @@ openSocket(int *dst, char *path)
 
 err:
 	/* Close and invalidate 'fd' if it got made */
-	if (fd < 0)
+	if (fd >= 0)
 	{
 		closeSocket(&fd);
 		Assert(fd < 0);
