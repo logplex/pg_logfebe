@@ -32,9 +32,10 @@ In ``postgresql.conf``::
 Reporting Bugs
 ==============
 
-Please contact daniel@fdr.io and/or daniel@heroku.com if you find a
-security-sensitive bug, such as (but not limited to) denial of
-service, information disclosure, or remote code execution.
+Please contact daniel@fdr.io, daniel@heroku.com, and/or
+security@heroku.com if you find a security-sensitive bug, such as (but
+not limited to) denial of service, information disclosure, or remote
+code execution.
 
 Otherwise, please file an issue on the `project page on Github`__.
 
