@@ -293,22 +293,16 @@ closeSocket(int *fd)
 {
 	const int save_errno = errno;
 
-	do
-	{
-		errno = 0;
-
-		/*
-		 * Ignore errors except EINTR: other than EINTR, there is no
-		 * obvious handling one can do from a failed close() that matters
-		 * in this case.
-		 */
-		close(*fd);
-
-		if (errno == EINTR)
-			continue;
-
-		*fd = -1;
-	} while (*fd >= 0);
+	/*
+	 * Close *fd and ignore EINTR, on advice from libusual's
+	 * "safe_close" function:
+	 *
+	 * POSIX says close() can return EINTR but fd state is "undefined"
+	 * later.  Seems Linux and BSDs close the fd anyway and EINTR is
+	 * simply informative.  Thus retry is dangerous.
+	 */
+	close(*fd);
+	*fd = -1;
 
 	errno = save_errno;
 }
