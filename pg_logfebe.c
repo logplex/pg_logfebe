@@ -181,10 +181,10 @@ _PG_init(void)
 static void
 openSocket(int *dst, char *path)
 {
-	const int			save_errno = errno;
-	struct sockaddr_un	addr;
-	bool				formed;
-	int					fd		   = -1;
+	const int save_errno = errno;
+	struct sockaddr_un addr;
+	bool formed;
+	int fd = -1;
 	StringInfoData startup;
 
 	/*
@@ -239,9 +239,9 @@ openSocket(int *dst, char *path)
 
 	/* Prepare startup: system identification ('I') frame */
 	{
-		char			*payload;
-		int				 payloadLen;
-		uint32_t		 nPayloadLen;
+		char *payload;
+		int payloadLen;
+		uint32_t nPayloadLen;
 
 		if (ident == NULL)
 			payload = "";
@@ -316,9 +316,9 @@ closeSocket(int *fd)
 static void
 formatLogTime(char *dst, size_t dstSz, struct timeval tv)
 {
-	char				 msbuf[8];
-	struct pg_tm		*tm;
-	pg_time_t			 stamp_time;
+	char msbuf[8];
+	struct pg_tm *tm;
+	pg_time_t stamp_time;
 
 	stamp_time = (pg_time_t) tv.tv_sec;
 	tm = pg_localtime(&stamp_time, log_timezone);
@@ -336,7 +336,7 @@ formatLogTime(char *dst, size_t dstSz, struct timeval tv)
 static void
 reCacheBackendStartTime(void)
 {
-	pg_time_t	stampTime = (pg_time_t) MyStartTime;
+	pg_time_t stampTime = (pg_time_t) MyStartTime;
 
 	/*
 	 * Note: we expect that guc.c will ensure that log_timezone is set up (at
@@ -414,7 +414,7 @@ fmtLogMsg(StringInfo dst, ErrorData *edata)
 	static long seqNum = 0;
 
 	/* has counter been reset in current process? */
-	static int	savedPid = 0;
+	static int savedPid = 0;
 
 	/*
 	 * This is one of the few places where we'd rather not inherit a static
@@ -498,7 +498,7 @@ fmtLogMsg(StringInfo dst, ErrorData *edata)
 	{
 		StringInfoData msgbuf;
 		const char *psdisp;
-		int			displen;
+		int displen;
 
 		initStringInfo(&msgbuf);
 
