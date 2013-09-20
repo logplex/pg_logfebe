@@ -54,8 +54,8 @@ PG_MODULE_MAGIC;
 #define FORMATTED_TS_LEN 128
 
 /*
- * Startup version string, e.g. PG9.2.2/1, where the /1 indicates the
- * pg_logfebe protocol version.
+ * Startup version string, e.g. "PG-9.2.4/logfebe-1", where the
+ * "logfebe-1" indicates the pg_logfebe protocol version.
  */
 #define PROTO_VERSION ("PG-" PG_VERSION "/logfebe-1")
 

@@ -127,7 +127,7 @@ that will occur in this order::
    (T)ype              Payload
    ---------------------------
 
-   (V)ersion           "PG9.2.4/1"
+   (V)ersion           "PG-9.2.4/logfebe-1"
 
    (I)dentification    "Any-string-set-via-logfebe.identity"
 
@@ -160,10 +160,10 @@ Version
    (V)ersion
            Version CString
 
-The version is of the format "PG9.2.4/1", where the former part is the
-Postgres version emitting the logs (as different versions of Postgres
-may have slightly different ``LogRecord`` fields available at some
-future time), and the latter part after the ``/`` is the
+The version is of the format "PG-9.2.4/logfebe-1", where the former
+part is the Postgres version emitting the logs (as different versions
+of Postgres may have slightly different ``LogRecord`` fields available
+at some future time), and the latter part after the ``/`` is the
 ``pg_logfebe`` protocol version, which is to be incremented if the
 protocol mechanics unrelated to the Postgres version are changed.
 
