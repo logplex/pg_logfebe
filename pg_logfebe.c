@@ -715,7 +715,8 @@ logfebe_emit_log_hook(ErrorData *edata)
 		 * Unsetting the GUCs via SIGHUP would leave a connection
 		 * dangling, if it exists, close it.
 		 */
-		if (outSockFd >= 0) {
+		if (outSockFd >= 0)
+		{
 			closeSocket(&outSockFd);
 		}
 
