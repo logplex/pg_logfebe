@@ -66,12 +66,19 @@ static char *ident = "";
 /* Old hook storage for loading/unloading of the extension */
 static emit_log_hook_type prev_emit_log_hook = NULL;
 
+/* Used to detect if values inherited over fork need resetting. */
+static int savedPid = 0;
+
 /* Caches the formatted start time */
 static char cachedBackendStartTime[FORMATTED_TS_LEN];
 
+/* Counter for log sequence number. */
+static long seqNum = 0;
+
 /*
- * File descriptor that log records are written to.  Is re-set if a write
- * fails.
+ * File descriptor that log records are written to.
+ *
+ * Is re-set if a write fails.
  */
 static int outSockFd = -1;
 
@@ -404,28 +411,6 @@ appendStringInfoPtr(StringInfo dst, const char *s)
 static void
 fmtLogMsg(StringInfo dst, ErrorData *edata)
 {
-	/* static counter for log sequence number */
-	static long seqNum = 0;
-
-	/* has counter been reset in current process? */
-	static int	savedPid = 0;
-
-	/*
-	 * This is one of the few places where we'd rather not inherit a static
-	 * variable's value from the postmaster.  But since we will, reset it when
-	 * MyProcPid changes.
-	 */
-	if (savedPid != MyProcPid)
-	{
-		seqNum = 0;
-		savedPid = MyProcPid;
-
-		/* Invalidate cache */
-		cachedBackendStartTime[0] = '\0';
-	}
-
-	seqNum += 1;
-
 	{
 		char formattedLogTime[FORMATTED_TS_LEN];
 
@@ -700,6 +685,33 @@ logfebe_emit_log_hook(ErrorData *edata)
 {
 	int save_errno;
 	StringInfoData buf;
+
+	/*
+	 * This is one of the few places where we'd rather not inherit a static
+	 * variable's value from the postmaster.  But since we will, reset it when
+	 * MyProcPid changes.
+	 */
+	if (savedPid != MyProcPid)
+	{
+		savedPid = MyProcPid;
+
+		/* Invalidate all inherited values */
+		seqNum = 0;
+		cachedBackendStartTime[0] = '\0';
+
+		if (outSockFd >= 0)
+		{
+			closeSocket(&outSockFd);
+		}
+	}
+
+	/*
+	 * Increment log sequence number
+	 *
+	 * Done early on so this happens regardless if there are problems emitting
+	 * the log.
+	 */
+	seqNum += 1;
 
 	/*
 	 * Early exit if the socket path is not set and isn't in the format of
