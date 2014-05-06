@@ -35,18 +35,22 @@
  * http://stackoverflow.com/questions/809902/64-bit-ntohl-in-c
  */
 #if defined(__linux__)
-#  include <endian.h>
+#include <endian.h>
+
 #elif defined(__FreeBSD__) || defined(__NetBSD__)
-#  include <sys/endian.h>
+#include <sys/endian.h>
+
 #elif defined(__OpenBSD__)
-#  include <sys/types.h>
-#  define be16toh(x) betoh16(x)
-#  define be32toh(x) betoh32(x)
-#  define be64toh(x) betoh64(x)
+#include <sys/types.h>
+#define be16toh(x) betoh16(x)
+#define be32toh(x) betoh32(x)
+#define be64toh(x) betoh64(x)
+
 #elif defined(__darwin__)
-#  include <libkern/OSByteOrder.h>
-#  define htobe32(x) __DARWIN_OSSwapInt32(x)
-#  define htobe64(x) __DARWIN_OSSwapInt64(x)
+#include <libkern/OSByteOrder.h>
+#define htobe32(x) __DARWIN_OSSwapInt32(x)
+#define htobe64(x) __DARWIN_OSSwapInt64(x)
+#endif
 #endif
 
 PG_MODULE_MAGIC;
