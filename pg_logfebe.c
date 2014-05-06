@@ -47,6 +47,7 @@
 #  include <libkern/OSByteOrder.h>
 #  define htobe32(x) __DARWIN_OSSwapInt32(x)
 #  define htobe64(x) __DARWIN_OSSwapInt64(x)
+#  define MSG_NOSIGNAL SO_NOSIGPIPE
 #endif
 
 PG_MODULE_MAGIC;
@@ -58,6 +59,7 @@ PG_MODULE_MAGIC;
  * "logfebe-1" indicates the pg_logfebe protocol version.
  */
 #define PROTO_VERSION ("PG-" PG_VERSION "/logfebe-1")
+
 
 /* GUC-configured destination of the log pages */
 static char *logUnixSocketPath = "";
