@@ -51,6 +51,13 @@
 #define htobe32(x) __DARWIN_OSSwapInt32(x)
 #define htobe64(x) __DARWIN_OSSwapInt64(x)
 #endif
+
+#if defined(__darwin__)
+/*
+ * On Macintosh, MSG_NOSIGNAL is not defined, but it has a moral
+ * equivalent, SO_NOSIGPIPE.
+ */
+#define MSG_NOSIGNAL SO_NOSIGPIPE
 #endif
 
 PG_MODULE_MAGIC;
