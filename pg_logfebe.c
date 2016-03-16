@@ -105,7 +105,9 @@ static void closeSocket(int *fd);
 static void fmtLogMsg(StringInfo dst, ErrorData *edata);
 static void formatLogTime(char *dst, size_t dstSz, struct timeval tv);
 static void formatNow(char *dst, size_t dstSz);
+#if PG_VERSION_NUM >= 90100
 static void gucOnAssignCloseInvalidate(const char *newval, void *extra);
+#endif
 static void logfebe_emit_log_hook(ErrorData *edata);
 static void openSocket(int *dst, char *path);
 static void optionalGucGet(char **dest, const char *name,
@@ -114,6 +116,7 @@ static void reCacheBackendStartTime(void);
 static void sendOrInval(int *fd, char *payload, size_t payloadSz);
 
 
+#if PG_VERSION_NUM >= 90100
 /*
  * Useful for HUP triggered reassignment: invalidate the socket, which will
  * cause path information to be evaluated when reconnection and identification
@@ -124,6 +127,7 @@ gucOnAssignCloseInvalidate(const char *newval, void *extra)
 {
 	closeSocket(&outSockFd);
 }
+#endif
 
 /*
  * Procedure that wraps a bunch of boilerplate GUC options appropriate for all
@@ -133,6 +137,7 @@ static void
 optionalGucGet(char **dest, const char *name,
 			   const char *shortDesc)
 {
+#if PG_VERSION_NUM >= 90100
 	DefineCustomStringVariable(
 		name,
 		shortDesc,
@@ -144,6 +149,19 @@ optionalGucGet(char **dest, const char *name,
 		NULL,
 		gucOnAssignCloseInvalidate,
 		NULL);
+#else
+	/* For 9.0, drop the ability to assign while the system is live. */
+	DefineCustomStringVariable(
+		name,
+		shortDesc,
+		"",
+		dest,
+		"",
+		PGC_POSTMASTER,
+		GUC_NOT_IN_SAMPLE,
+		NULL,
+		NULL);
+#endif
 }
 
 /*

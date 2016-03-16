@@ -1,0 +1,20 @@
+Source: pglogfebe
+Priority: extra
+Maintainer: Heroku Department of Data <dod@heroku.com>
+Uploaders: Greg Burek <gregburek@heroku.com>
+Build-Depends: debhelper (>= 9), postgresql-server-dev-all (>= 158~)
+Standards-Version: 3.9.5
+Section: database
+Homepage: https://github.com/heroku/pg_logfebe
+Vcs-Git: https://github.com/heroku/pg_logfebe.git
+Vcs-Browser: https://github.com/heroku/pg_logfebe
+XS-Testsuite: autopkgtest
+
+Package: postgresql-PGVERSION-pglogfebe
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, postgresql-PGVERSION
+Description: PostgreSQL Logging to A Unix Socket
+ This extension produces detailed Postgres logs framed in the general style of
+ PostgreSQL's FEBE, the basis of the PostgreSQL wire protocol and sends them to
+ a unix socket.
