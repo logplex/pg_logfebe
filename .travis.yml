@@ -11,12 +11,14 @@ before_install:
   - curl -L https://alioth.debian.org/scm/loggerhead/pkg-postgresql/postgresql-common/trunk/download/head:/apt.postgresql.org.s-20130224224205-px3qyst90b3xp8zj-1/apt.postgresql.org.sh | sudo bash
   - wget --quiet -O - https://packagecloud.io/gpg.key | sudo apt-key add -
   - curl -s https://${TOKEN}:@packagecloud.io/install/repositories/heroku/dod/script.deb.sh | sudo bash
-  - sudo apt-get update && sudo apt-get -y --force-yes install apt-transport-https build-essential devscripts dh-make libkrb5-dev postgresql-9.1=9.1.20-1heroku1 postgresql-client-9.1=9.1.20-1heroku1 postgresql-contrib-9.1=9.1.20-1heroku1 postgresql-server-dev-9.1=9.1.20-1heroku1 postgresql-server-dev-all
+  - sudo apt-get update
+  - sudo apt-get -y --force-yes install rsync apt-transport-https build-essential devscripts dh-make libkrb5-dev postgresql-server-dev-all
+  - sudo apt-get -y --force-yes install postgresql-9.1=9.1.20-1heroku1 postgresql-client-9.1=9.1.20-1heroku1 postgresql-contrib-9.1=9.1.20-1heroku1 postgresql-server-dev-9.1=9.1.20-1heroku1
+  - sudo apt-get -y --force-yes install postgresql-9.5 postgresql-client-9.5 postgresql-contrib-9.5 postgresql-server-dev-9.5
 before_script:
   - make clean
 script:
   - make
-before_deploy:
   - pg_buildext updatecontrol
   - make deb
 deploy:
