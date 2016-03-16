@@ -1,0 +1,5 @@
+pglogfebe (1.0-1ubuntu1) precise; urgency=medium
+
+  * Initial release
+
+ -- Greg Burek <gregburek@heroku.com>  Wed, 16 Mar 2016 00:59:55 +0000

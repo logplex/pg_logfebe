@@ -1,0 +1,28 @@
+language: cpp
+sudo: required
+dist: trusty
+env:
+  - secure: "cmnyRBifyJ8wD1+SPtvrU0U+COMthMMvHzZq0PWT04XJqKztEbDYdk3Ka4TfANlepcnL8oaK818b2pnPEYNu+VXGMamcz+SkbDgTTqW/h9b8wN20idEQi8GNSzuFOoMMawTASfZVEaP1VrMNUETMXxtEKy7xm6zigWAAXmZmGSU="
+before_install:
+  - curl -L https://alioth.debian.org/scm/loggerhead/pkg-postgresql/postgresql-common/trunk/download/head:/apt.postgresql.org.s-20130224224205-px3qyst90b3xp8zj-1/apt.postgresql.org.sh | sudo bash
+  - wget --quiet -O - https://packagecloud.io/gpg.key | sudo apt-key add -
+  - curl -s https://${TOKEN}:@packagecloud.io/install/repositories/heroku/dod/script.deb.sh | sudo bash
+  - sudo apt-get update && sudo apt-get -y --force-yes install apt-transport-https build-essential devscripts dh-make libkrb5-dev postgresql-9.1=9.1.20-1heroku1 postgresql-client-9.1=9.1.20-1heroku1 postgresql-contrib-9.1=9.1.20-1heroku1 postgresql-server-dev-9.1=9.1.20-1heroku1 postgresql-server-dev-all
+before_script:
+  - make clean
+script:
+  - make
+before_deploy:
+  - pg_buildext updatecontrol
+  - make deb
+deploy:
+  - provider: packagecloud
+    dist: ubuntu/$DIST
+    package_glob: build/*.deb
+    username: heroku
+    repository: dod
+    token:
+      secure: dAgEHUvBb5cjk34wIWX3H0Gg4V2JT6kMPc9c2isCMwMI3HDo+e8EmQU4zsPdv1nLdnSLFqfRizzACQuZZ7UU4YaDO66dMIBDN2tsbISXB/7O9f5GMXBaWrh484DXg5eeNvGzpWRXJqKEido5133xXpUH57S3OHlJZrYA4gQ7Ydc=
+    skip_cleanup: true
+notifications:
+  email: false
