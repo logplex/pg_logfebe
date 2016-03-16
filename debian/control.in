@@ -2,8 +2,8 @@ Source: pglogfebe
 Priority: extra
 Maintainer: Heroku Department of Data <dod@heroku.com>
 Uploaders: Greg Burek <gregburek@heroku.com>
-Build-Depends: debhelper (>= 9), postgresql-server-dev-all (>= 158~)
-Standards-Version: 3.9.5
+Build-Depends: debhelper (>= 9), postgresql-server-dev-all (>= 171~)
+Standards-Version: 3.9.6
 Section: database
 Homepage: https://github.com/heroku/pg_logfebe
 Vcs-Git: https://github.com/heroku/pg_logfebe.git
