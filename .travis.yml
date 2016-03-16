@@ -2,9 +2,11 @@ language: cpp
 sudo: required
 dist: trusty
 env:
-  - secure: "cmnyRBifyJ8wD1+SPtvrU0U+COMthMMvHzZq0PWT04XJqKztEbDYdk3Ka4TfANlepcnL8oaK818b2pnPEYNu+VXGMamcz+SkbDgTTqW/h9b8wN20idEQi8GNSzuFOoMMawTASfZVEaP1VrMNUETMXxtEKy7xm6zigWAAXmZmGSU="
-  - DIST=precise
-  - DIST=trusty
+  global:
+    - secure: "cmnyRBifyJ8wD1+SPtvrU0U+COMthMMvHzZq0PWT04XJqKztEbDYdk3Ka4TfANlepcnL8oaK818b2pnPEYNu+VXGMamcz+SkbDgTTqW/h9b8wN20idEQi8GNSzuFOoMMawTASfZVEaP1VrMNUETMXxtEKy7xm6zigWAAXmZmGSU="
+  matrix:
+    - DIST=precise
+    - DIST=trusty
 before_install:
   - curl -L https://alioth.debian.org/scm/loggerhead/pkg-postgresql/postgresql-common/trunk/download/head:/apt.postgresql.org.s-20130224224205-px3qyst90b3xp8zj-1/apt.postgresql.org.sh | sudo bash
   - wget --quiet -O - https://packagecloud.io/gpg.key | sudo apt-key add -
