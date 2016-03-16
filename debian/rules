@@ -21,7 +21,7 @@ override_dh_install:
 	rm -rf debian/*/usr/share/doc/postgresql-doc-*
 
 override_dh_installdocs:
-	dh_installdocs --all README.md
+	dh_installdocs --all README.rst
 
 override_dh_link:
 	set -ex; for v in $(shell pg_buildext supported-versions); do mkdir debian/postgresql-$$v-pg_logfebe/usr/lib/postgresql/$$v/lib/plugins; ln -s ../pg_logfebe.so debian/postgresql-$$v-pg_logfebe/usr/lib/postgresql/$$v/lib/plugins; done
